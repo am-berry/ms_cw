@@ -6,7 +6,6 @@ import numpy as np
 import networkx as nx
 
 import tubemap
-from tubemap import tubemap_dictionary
 
 def create_networkx_graph(tubemap_dictionary):
   dct = {}
@@ -70,23 +69,23 @@ def shortest_path(start, end, Q):
   while next_node != end:
     next_node = np.argmax(Q[next_node,])
     path.append(next_node)
-  return '->'.join([tubemap.num_convert(pat) for pat in path])
+  return '->'.join([tubemap.num_convert(station) for station in path])
 
 if __name__ == '__main__':
   while True:
     start = input('Start station: ').title()
     end = input('End station: ').title()
-    if start not in tubemap_dictionary.keys() or end not in tubemap_dictionary.keys():
-      print("TRY AGAIN")
+    if start not in tubemap.tubemap_dictionary.keys() or end not in tubemap.tubemap_dictionary.keys():
+      print("Stations were invalid, please input again")
       continue
     else:
       start = int(tubemap.place_convert(start)) 
       end = int(tubemap.place_convert(end))
       break
-  g = create_networkx_graph(tubemap_dictionary)
+  g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, end)
   Q = initialise_Q(g)
 
-  learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, iterations = 20000, g)
+  learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g)
   print(shortest_path(start, end, Q))
 

@@ -1,4 +1,7 @@
-tubemap = {"Aldgate" : ["Liverpool Street","Tower Hill"],
+#!/usr/bin/env python3 
+
+
+tubemap_dictionary = {"Aldgate" : ["Liverpool Street","Tower Hill"],
 "Aldgate East" : ["Tower Hill","Liverpool Street"],
 "Angel" : ["King's Cross St. Pancras","Old Street"],
 "Baker Street" : ["Marylebone","Regent's Park","Edgware Road (C)","Great Portland Street","Bond Street"],
@@ -57,3 +60,19 @@ tubemap = {"Aldgate" : ["Liverpool Street","Tower Hill"],
 "Warren Street" : ["Euston","Goodge Street","Oxford Circus"],
 "Waterloo" : ["Westminster","Embankment","Lambeth North","Southwark","Bank"],
 "Westminster" : ["Embankment","St. James's Park","Green Park","Waterloo"]}
+
+def place_convert(place):
+  dct = {}
+  for i, k in enumerate(list(tubemap_dictionary.keys())):
+    dct[k] = i
+  return dct[place]
+
+def num_convert(num):
+  dct = {}
+  for i, k in enumerate(list(tubemap_dictionary.keys())):
+    dct[k] = i
+  
+  for k, v in dct.items():
+    if num == v:
+      return k 
+

@@ -56,8 +56,8 @@ def update_Q(state, action, learning_rate, gamma):
   else:
     max_idx = int(max_idx)
   max_val = Q[action, max_idx]
-  max_val = Q[action, max_idx]
-  Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma*max_val))
+  Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx])
+)
 
 def learn(threshold, learning_rate, gamma, num_episodes, graph):
   for i in range(num_episodes):
@@ -76,18 +76,18 @@ def shortest_path(start, end, Q):
   return [tubemap.num_convert(pat) for pat in path]
 
 if __name__ == '__main__':
-  inp = input('Start station: ')
-  inp2 = input('End station: ')
-  if inp not in tubemap_dictionary.keys() or inp2 not in tubemap_dictionary.keys():
-    print("Break yourself fool")
+  start = input('Start station: ')
+  end = input('End station: ')
+  if start not in tubemap_dictionary.keys() or end not in tubemap_dictionary.keys():
+    print("TRY AGAIN")
     exit()
   else:
-    inp = int(tubemap.place_convert(inp)) 
-    inp2 = int(tubemap.place_convert(inp2))
+    start = int(tubemap.place_convert(start)) 
+    end = int(tubemap.place_convert(end))
   g = create_networkx_graph(tubemap_dictionary)
-  R = initialise_R(g, inp2)
+  R = initialise_R(g, end)
   Q = initialise_Q(g)
 
   learn(0.5, 0.8, 0.8, 20000, g)
-  print(shortest_path(inp, inp2, Q))
+  print(shortest_path(start, end, Q))
 

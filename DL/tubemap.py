@@ -1,6 +1,5 @@
 #!/usr/bin/env python3 
 
-
 tubemap_dictionary = {"Aldgate" : ["Liverpool Street","Tower Hill"],
 "Aldgate East" : ["Tower Hill","Liverpool Street"],
 "Angel" : ["King's Cross St. Pancras","Old Street"],
@@ -70,9 +69,6 @@ def place_convert(place):
 def num_convert(num):
   dct = {}
   for i, k in enumerate(list(tubemap_dictionary.keys())):
-    dct[k] = i
-  
-  for k, v in dct.items():
-    if num == v:
-      return k 
+    dct[i] = k
 
+  return dct[num]

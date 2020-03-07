@@ -55,7 +55,6 @@ def update_Q(state, action, learning_rate, gamma):
     max_idx = int(np.random.choice(max_idx))
   else:
     max_idx = int(max_idx)
-  max_val = Q[action, max_idx]
   Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx])
 )
 

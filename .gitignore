@@ -1,2 +1,5 @@
 mess.*
 *.swp
+
+ms_cw/DL/.ipynb_checkpoints
+ms_cw/DL/__pycache__

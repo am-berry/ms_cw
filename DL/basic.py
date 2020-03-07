@@ -40,9 +40,9 @@ def initialise_Q(nx_graph):
       Q[x, node] = 0
   return Q
 
-def next_node(start, threshold, graph):
+def next_node(start, epsilon, graph):
   rand = random.uniform(0, 1)
-  if rand < threshold:
+  if rand < epsilon:
     sample = list(dict(graph[start]).keys())
   else:
     sample = np.where(Q[start,] == np.max(Q[start,]))[1]
@@ -58,10 +58,10 @@ def update_Q(state, action, learning_rate, gamma):
   Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx])
 )
 
-def learn(threshold, learning_rate, gamma, num_episodes, graph):
+def learn(epsilon, learning_rate, gamma, num_episodes, graph):
   for i in range(num_episodes):
     start = np.random.randint(0, 59)
-    next_n = next_node(start, threshold, graph)
+    next_n = next_node(start, epsilon, graph)
     update_Q(start, next_n, learning_rate, gamma)
   return Q
 

@@ -1,20 +1,12 @@
 #!/usr/bin/env python3
 
-import sys
 import random
 
-import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-
 import networkx as nx
 
 import tubemap
 from tubemap import tubemap_dictionary
-
-# tubemap is names of locations, but for ease of coding we want to convert to numbers
-
-# We use networkx to simplify things down. Mostly to quickly get a list of connections:
 
 def create_networkx_graph(tubemap_dictionary):
   dct = {}
@@ -57,15 +49,15 @@ def next_node(start, threshold, graph):
   next_node = np.random.choice(sample)
   return next_node
 
-def update_Q(node1, node2, learning_rate, gamma):
-  max_idx = np.where(Q[node2,] == np.max(Q[node2,]))[1]
+def update_Q(state, action, learning_rate, gamma):
+  max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
   if max_idx.shape[0] > 1:
     max_idx = int(np.random.choice(max_idx))
   else:
     max_idx = int(max_idx)
-  max_val = Q[node2, max_idx]
-  max_val = Q[node2, max_idx]
-  Q[node1, node2] = int((1-learning_rate)*Q[node1, node2] + learning_rate*(R[node1, node2] + gamma*max_val))
+  max_val = Q[action, max_idx]
+  max_val = Q[action, max_idx]
+  Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma*max_val))
 
 def learn(threshold, learning_rate, gamma, num_episodes, graph):
   for i in range(num_episodes):
@@ -88,7 +80,7 @@ if __name__ == '__main__':
   inp2 = input('End station: ')
   if inp not in tubemap_dictionary.keys() or inp2 not in tubemap_dictionary.keys():
     print("Break yourself fool")
-    e
+    exit()
   else:
     inp = int(tubemap.place_convert(inp)) 
     inp2 = int(tubemap.place_convert(inp2))

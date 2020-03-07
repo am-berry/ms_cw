@@ -72,17 +72,19 @@ def shortest_path(start, end, Q):
   while next_node != end:
     next_node = np.argmax(Q[next_node,])
     path.append(next_node)
-  return [tubemap.num_convert(pat) for pat in path]
+  return '->'.join([tubemap.num_convert(pat) for pat in path])
 
 if __name__ == '__main__':
-  start = input('Start station: ')
-  end = input('End station: ')
-  if start not in tubemap_dictionary.keys() or end not in tubemap_dictionary.keys():
-    print("TRY AGAIN")
-    exit()
-  else:
-    start = int(tubemap.place_convert(start)) 
-    end = int(tubemap.place_convert(end))
+  while True:
+    start = input('Start station: ').title()
+    end = input('End station: ').title()
+    if start not in tubemap_dictionary.keys() or end not in tubemap_dictionary.keys():
+      print("TRY AGAIN")
+      continue
+    else:
+      start = int(tubemap.place_convert(start)) 
+      end = int(tubemap.place_convert(end))
+      break
   g = create_networkx_graph(tubemap_dictionary)
   R = initialise_R(g, end)
   Q = initialise_Q(g)

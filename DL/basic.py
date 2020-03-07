@@ -20,7 +20,6 @@ def create_networkx_graph(tubemap_dictionary):
     for place in v:
       _.append(dct[place])
     tubemap_new[k] = _
-
   return nx.Graph(tubemap_new)
 
 def initialise_R(nx_graph, end_loc):
@@ -55,8 +54,7 @@ def update_Q(state, action, learning_rate, gamma):
     max_idx = int(np.random.choice(max_idx))
   else:
     max_idx = int(max_idx)
-  Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx])
-)
+  Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx]))
 
 def learn(epsilon, learning_rate, gamma, num_episodes, graph):
   for i in range(num_episodes):
@@ -89,6 +87,6 @@ if __name__ == '__main__':
   R = initialise_R(g, end)
   Q = initialise_Q(g)
 
-  learn(0.5, 0.8, 0.8, 20000, g)
+  learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, iterations = 20000, g)
   print(shortest_path(start, end, Q))
 

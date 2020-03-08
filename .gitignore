@@ -1,4 +1,8 @@
 mess.*
+DataAnalysis.*
+evaluation.*
+ParamSearch.*
+Visualisation.*
 *.swp
 
 /DL/__pycache__/*

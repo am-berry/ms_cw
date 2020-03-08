@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import random
-
 import numpy as np
 import networkx as nx
 
@@ -39,7 +37,7 @@ def initialise_Q(nx_graph):
   return Q
 
 def next_node(start, epsilon, graph):
-  rand = random.uniform(0, 1)
+  rand = np.random.uniform()
   if rand < epsilon:
     sample = list(dict(graph[start]).keys())
   else:
@@ -88,4 +86,3 @@ if __name__ == '__main__':
 
   learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g)
   print(shortest_path(start, end, Q))
-

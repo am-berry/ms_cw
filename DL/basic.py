@@ -52,13 +52,15 @@ def next_node(start, epsilon, graph):
   next_node = np.random.choice(sample)
   return next_node
 
-# 
+# Updates the Q-matrix using the Bellman(?) equation
 def update_Q(state, action, learning_rate, gamma):
   max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
   if max_idx.shape[0] > 1:
     max_idx = np.random.choice(max_idx)
   Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx]))
 
+# Starts randomly for a set amount of episodes, updating Q as it goes along
+# Implemented greedy-epsilon policy, where epsilon is reduced on each episode
 def learn(epsilon, learning_rate, gamma, num_episodes, graph, greedy=False):
   for i in range(num_episodes):
     start = np.random.randint(0, 59)
@@ -70,6 +72,8 @@ def learn(epsilon, learning_rate, gamma, num_episodes, graph, greedy=False):
     update_Q(start, next_n, learning_rate, gamma)
   return Q
 
+# Finds the shortest path from start by finding the highest action reward at each state until the end
+# Returns a string of the stations in the shortest path separated by ->
 def shortest_path(start, end, Q):
   path = [start]
   next_node = np.argmax(Q[start,])

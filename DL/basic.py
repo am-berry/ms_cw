@@ -52,6 +52,12 @@ def next_node(start, epsilon, graph):
   next_node = np.random.choice(sample)
   return next_node
 
+def boltzmann_next_node(start, tau, graph):
+    exp_values  = np.exp(Q[start,] / tau)
+    probs = exp_values / np.sum(exp_values)
+    action = np.random.choice(range(Q.shape[0]), p = probs.tolist()[0])
+    return action
+
 # Updates the Q-matrix using the Bellman(?) equation
 def update_Q(state, action, learning_rate, gamma):
   max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
@@ -61,10 +67,15 @@ def update_Q(state, action, learning_rate, gamma):
 
 # Starts randomly for a set amount of episodes, updating Q as it goes along
 # Implemented greedy-epsilon policy, where epsilon is reduced on each episode
-def learn(epsilon, learning_rate, gamma, num_episodes, graph, greedy=False):
+def learn(epsilon, learning_rate, gamma, num_episodes, graph, greedy=False, tau=1.0, boltzmann=False):
   for i in range(num_episodes):
     start = np.random.randint(0, 59)
-    next_n = next_node(start, epsilon, graph)
+    if boltzmann == True:
+      next_n = boltzmann_next_node(start, tau, graph)
+      if i % 500 == 0:
+        tau *= 0.99
+    else:
+      next_n = next_node(start, epsilon, graph)
     if greedy == True and epsilon < 0.5:
       epsilon *= 0.9999
     elif greedy == True and epsilon >= 0.5:
@@ -98,5 +109,5 @@ if __name__ == '__main__':
   R = initialise_R(g, end)
   Q = initialise_Q(g)
 
-  learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, greedy=True)
+  learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, tau =1., boltzmann=True, greedy = False)
   print(shortest_path(start, end, Q))

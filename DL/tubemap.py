@@ -70,18 +70,4 @@ def num_convert(num):
   dct = {}
   for i, k in enumerate(list(tubemap_dictionary.keys())):
     dct[i] = k
-
   return dct[num]
-#
-#import networkx as nx
-#import matplotlib.pyplot as plt
-#
-#G= nx.DiGraph(tubemap_dictionary)
-#
-#pos = nx.spring_layout(G)
-#nx.draw_networkx_nodes(G, pos)
-#nx.draw_networkx_labels(G, pos)
-#nx.draw_networkx_edges(G, pos, arrows=True)
-#nx.draw_networkx_edges(G, pos, arrows=False)
-#plt.show()
-#

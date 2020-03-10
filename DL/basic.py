@@ -43,22 +43,23 @@ def initialise_Q(nx_graph):
 
 # We check if epsilon (which we set) is less than a random number between 0 and 1. 
 # If rand < epsilon, the algorithm explores, if rand >= epsilon, we get all states and choose one with the highest reward (randomly if more than 1)
-def next_node(start, epsilon, graph):
+def epsilon_policy(state, epsilon, graph):
   rand = np.random.uniform()
   if rand < epsilon:
-    sample = list(dict(graph[start]).keys())
+    sample = list(dict(graph[state]).keys())
   else:
-    sample = np.where(Q[start,] == np.max(Q[start,]))[1]
-  next_node = np.random.choice(sample)
-  return next_node
+    sample = np.where(Q[state,] == np.max(Q[state,]))[1]
+  action = np.random.choice(sample)
+  return action
 
-def boltzmann_next_node(start, tau, graph):
-    exp_values  = np.exp(Q[start,] / tau)
-    probs = exp_values / np.sum(exp_values)
-    action = np.random.choice(range(Q.shape[0]), p = probs.tolist()[0])
-    return action
+# Boltzmann (softmax) policy - calculates the probabilities of each action for a state, then selects pseurandomly based on these probabilities
+def boltzmann_police(state, tau, graph):
+  exp_values  = np.exp(Q[state,] / tau)
+  probs = exp_values / np.sum(exp_values)
+  action = np.random.choice(range(Q.shape[0]), p = probs.tolist()[0])
+  return action
 
-# Updates the Q-matrix using the Bellman(?) equation
+# Updates the Q-matrix using the Bellman equation
 def update_Q(state, action, learning_rate, gamma):
   max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
   if max_idx.shape[0] > 1:
@@ -67,20 +68,21 @@ def update_Q(state, action, learning_rate, gamma):
 
 # Starts randomly for a set amount of episodes, updating Q as it goes along
 # Implemented greedy-epsilon policy, where epsilon is reduced on each episode
-def learn(epsilon, learning_rate, gamma, num_episodes, graph, greedy=False, tau=1.0, boltzmann=False):
+def learn(learning_rate, gamma, num_episodes, graph, policy, parameter):
+  assert policy == 'boltzmann' or policy == 'epsilon', 'please input either \'boltzmann\' or \'epsilon\' as policy'
   for i in range(num_episodes):
     start = np.random.randint(0, 59)
-    if boltzmann == True:
-      next_n = boltzmann_next_node(start, tau, graph)
+    if policy == 'boltzmann':
+      next_action = boltzmann_policy(start, parameter, graph)
       if i % 500 == 0:
-        tau *= 0.99
-    else:
-      next_n = next_node(start, epsilon, graph)
-    if greedy == True and epsilon < 0.5:
-      epsilon *= 0.9999
-    elif greedy == True and epsilon >= 0.5:
-      epsilon *= 0.99999
-    update_Q(start, next_n, learning_rate, gamma)
+        parameter *= 0.99
+    elif policy == 'epsilon':
+      next_action = epsilon_policy(start, parameter, graph)
+      if parameter < 0.5:
+        parameter *= 0.9999
+      else:
+        parameter *= 0.99999
+    update_Q(start, next_action, learning_rate, gamma)
   return Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
@@ -109,5 +111,5 @@ if __name__ == '__main__':
   R = initialise_R(g, end)
   Q = initialise_Q(g)
 
-  learn(epsilon = 0.5, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, tau =1., boltzmann=True, greedy = False)
+  learn(learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, policy = 'epsilon', parameter = 0.8)
   print(shortest_path(start, end, Q))

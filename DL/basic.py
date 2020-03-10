@@ -68,7 +68,7 @@ def update_Q(state, action, learning_rate, gamma, Q, R):
 
 # Starts randomly for a set amount of episodes, updating Q as it goes along
 # Implemented greedy-epsilon policy, where epsilon is reduced on each episode
-def learn(Q, learning_rate, gamma, num_episodes, graph, policy, parameter):
+def learn(Q, R, learning_rate, gamma, num_episodes, graph, policy, parameter):
   assert policy == 'boltzmann' or policy == 'epsilon', 'please input either \'boltzmann\' or \'epsilon\' as policy'
   for i in range(num_episodes):
     start = np.random.randint(0, len(graph))

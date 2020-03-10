@@ -89,11 +89,11 @@ def learn(Q, R, learning_rate, gamma, num_episodes, graph, policy, parameter):
 # Returns a string of the stations in the shortest path separated by ->
 def shortest_path(start, end, Q):
   path = [start]
-  next_node = np.argmax(Q[start,])
-  path.append(next_node)
-  while next_node != end:
-    next_node = np.argmax(Q[next_node,])
-    path.append(next_node)
+  next_action = np.argmax(Q[start,])
+  path.append(next_action)
+  while next_action != end:
+    next_action = np.argmax(Q[next_action,])
+    path.append(next_action)
   return '->'.join([tubemap.num_convert(station) for station in path])
 
 if __name__ == '__main__':
@@ -111,5 +111,5 @@ if __name__ == '__main__':
   R = initialise_R(g, end)
   Q = initialise_Q(g)
 
-  learn(Q, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, policy = 'epsilon', parameter = 0.8)
+  learn(Q, R, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, policy = 'epsilon', parameter = 0.8)
   print(shortest_path(start, end, Q))

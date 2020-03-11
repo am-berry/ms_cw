@@ -61,15 +61,17 @@ def boltzmann_policy(state, tau, graph, Q):
 
 # Updates the Q-matrix using the Bellman equation
 def update_Q(state, action, learning_rate, gamma, Q, R):
+  og = Q.sum()
   max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
   if max_idx.shape[0] > 1:
     max_idx = np.random.choice(max_idx)
   Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx]))
-
+  return Q.sum() - og
 # Starts randomly for a set amount of episodes, updating Q as it goes along
 # Implemented greedy-epsilon policy, where epsilon is reduced on each episode
 def learn(Q, R, learning_rate, gamma, num_episodes, graph, policy, parameter):
   assert policy == 'boltzmann' or policy == 'epsilon', 'please input either \'boltzmann\' or \'epsilon\' as policy'
+  cumulative = 0
   for i in range(num_episodes):
     start = np.random.randint(0, len(graph))
     if policy == 'boltzmann':
@@ -82,7 +84,9 @@ def learn(Q, R, learning_rate, gamma, num_episodes, graph, policy, parameter):
         parameter *= 0.9999
       else:
         parameter *= 0.99999
-    update_Q(start, next_action, learning_rate, gamma, Q, R)
+    cumulative += update_Q(start, next_action, learning_rate, gamma, Q, R)
+    if i < 50:
+      print(f'iteration {i} cumulative reward:{cumulative}')
   return Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end

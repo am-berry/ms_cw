@@ -86,7 +86,6 @@ def learn(Q, R, learning_rate, gamma, num_episodes, graph, policy, parameter):
       else:
         parameter *= 0.99999
     cumulative[i] = update_Q(start, next_action, learning_rate, gamma, Q, R)
-  print(cumulative[num_episodes-50:])
   return Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
@@ -102,8 +101,8 @@ def shortest_path(start, end, Q):
 
 if __name__ == '__main__':
   while True:
-    start = input('Start station: ').title()
-    end = input('End station: ').title()
+    start = input('Start station: ').strip().title()
+    end = input('End station: ').strip().title()
     if start not in tubemap.tubemap_dictionary.keys() or end not in tubemap.tubemap_dictionary.keys():
       print("Stations were invalid, please input again")
       continue

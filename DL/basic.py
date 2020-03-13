@@ -82,9 +82,8 @@ def shortest_path(start, end, Q):
 def learn(R, learning_rate, gamma, num_episodes, graph, policy, par, end):
   assert policy == 'boltzmann' or policy == 'epsilon'
   Q = initialise_Q(graph)
-  steps = []
+  steps = [0]*num_episodes
   for i in range(num_episodes):
-    print(i) 
     parameter = par
     loc = np.random.randint(0, len(graph))
     start_loc = loc
@@ -101,8 +100,7 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, par, end):
         else:
           parameter *= 0.99999
       update_Q(start, loc, learning_rate, gamma, Q, R)
-    steps.append(len(shortest_path(start_loc, end, Q)))
-    print(shortest_path(start_loc, end, Q))
+    steps[i] = len(shortest_path(start_loc, end, Q)) 
   return steps
 
 if __name__ == '__main__':
@@ -121,4 +119,4 @@ if __name__ == '__main__':
   #Q = initialise_Q(g)
 
   print(
-  learn(R, learning_rate = 0.8, gamma = 0.8, num_episodes = 20, graph = g, policy = 'epsilon', par = 0.8, end=end)) 
+  learn(R, learning_rate = 0.8, gamma = 0.8, num_episodes = 200, graph = g, policy = 'epsilon', par = 0.8, end=end)) 

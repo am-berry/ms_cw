@@ -61,32 +61,10 @@ def boltzmann_policy(state, tau, graph, Q):
 
 # Updates the Q-matrix using the Bellman equation
 def update_Q(state, action, learning_rate, gamma, Q, R):
-  og = Q.sum()
   max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
   if max_idx.shape[0] > 1:
     max_idx = np.random.choice(max_idx)
   Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx]))
-  return Q.sum() - og
-
-# Starts randomly for a set amount of episodes, updating Q as it goes along
-# Implemented greedy-epsilon policy, where epsilon is reduced on each episode
-def learn(Q, R, learning_rate, gamma, num_episodes, graph, policy, parameter):
-  assert policy == 'boltzmann' or policy == 'epsilon', 'please input either \'boltzmann\' or \'epsilon\' as policy'
-  cumulative = [0]*num_episodes
-  for i in range(num_episodes):
-    start = np.random.randint(0, len(graph))
-    if policy == 'boltzmann':
-      next_action = boltzmann_policy(start, parameter, graph, Q)
-      if i % 500 == 0:
-        parameter *= 0.99
-    elif policy == 'epsilon':
-      next_action = epsilon_policy(start, parameter, graph, Q)
-      if parameter < 0.5:
-        parameter *= 0.9999
-      else:
-        parameter *= 0.99999
-    cumulative[i] = update_Q(start, next_action, learning_rate, gamma, Q, R)
-  return Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
 # Returns a string of the stations in the shortest path separated by ->
@@ -97,7 +75,35 @@ def shortest_path(start, end, Q):
   while next_action != end:
     next_action = np.argmax(Q[next_action,])
     path.append(next_action)
-  return '->'.join([tubemap.num_convert(station) for station in path])
+  return [tubemap.num_convert(station) for station in path]
+
+# Starts randomly for a set amount of episodes, updating Q as it goes along
+# Implemented greedy-epsilon policy, where epsilon is reduced on each episode
+def learn(R, learning_rate, gamma, num_episodes, graph, policy, par, end):
+  assert policy == 'boltzmann' or policy == 'epsilon'
+  Q = initialise_Q(graph)
+  steps = []
+  for i in range(num_episodes):
+    print(i) 
+    parameter = par
+    loc = np.random.randint(0, len(graph))
+    start_loc = loc
+    while loc != end:
+      start = loc
+      if policy == 'boltzmann':
+        loc = boltzmann_policy(loc, parameter, graph, Q)
+        if i % 500 == 0:
+          parameter *= 0.99
+      elif policy == 'epsilon':
+        loc = epsilon_policy(loc, parameter, graph, Q)
+        if parameter < 0.5:
+          parameter *= 0.9999
+        else:
+          parameter *= 0.99999
+      update_Q(start, loc, learning_rate, gamma, Q, R)
+    steps.append(len(shortest_path(start_loc, end, Q)))
+    print(shortest_path(start_loc, end, Q))
+  return steps
 
 if __name__ == '__main__':
   while True:
@@ -112,7 +118,7 @@ if __name__ == '__main__':
       break
   g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, end)
-  Q = initialise_Q(g)
+  #Q = initialise_Q(g)
 
-  learn(Q, R, learning_rate = 0.8, gamma = 0.8, num_episodes = 20000, graph = g, policy = 'epsilon', parameter = 0.8)
-  print(shortest_path(start, end, Q))
+  print(
+  learn(R, learning_rate = 0.8, gamma = 0.8, num_episodes = 20, graph = g, policy = 'epsilon', par = 0.8, end=end)) 

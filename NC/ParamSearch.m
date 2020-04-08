@@ -56,8 +56,9 @@ BoxConstraint = linspace(1,20,20);
 
 Gamma = logspace(-2, 1, 4); % values of 0.01, 0.1, 1, 10
 
-n = 0; % counter 
-svm_error = zeros(1,240); % storing accuracy in an array
+n = 0; % counter
+train_svm_error = zeros(1,240);
+test_svm_error = zeros(1,240); % storing accuracy in an array
 
 idx = randperm(numel(y_train), size(y_train, 1));
 x = X_train(idx, :);
@@ -86,12 +87,13 @@ for i=1:length(KernelFunction)
                 avg_test_acc = avg_test_acc + acc1;
             end
             n = n+1;
-            svm_error(1,n) = avg_test_acc / 5; %append to the error matrix
+            train_svm_error(1,n) = avg_train_acc / 5;
+            test_svm_error(1,n) = avg_test_acc / 5; %append to the error matrix
         end
     end                 
 end
 
-% Using the OptimizeHyperparameters function in the fitcsvm method
+%% Using the OptimizeHyperparameters function in the fitcsvm method
 model = fitcsvm(X_train, y_train, 'OptimizeHyperparameters', 'auto', ...
     'HyperparameterOptimizationOptions', struct('AcquisitionFunctionName',...
     'expected-improvement-plus'));
@@ -106,7 +108,7 @@ figure(1);
 %hold on
 %errorbar(BoxConstraint,svm_error(:,21:end),ones(size(svm_error(:,1:20)))*std(svm_error)/sqrt(length(BoxConstraint)));
 [X,Y] = meshgrid(BoxConstraint, Gamma);
-Z = reshape(svm_error(:, 1:80), 4, 20);
+Z = reshape(test_svm_error(:, 1:80), 4, 20);
 mesh(X,Y,Z);
 hold on
 %surf(BoxConstraint, Gamma, svm_error(:, 1:80), 'o');

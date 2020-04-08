@@ -1,9 +1,9 @@
 mess.*
 DataAnalysis.*
 evaluation.*
-ParamSearch.*
 Visualisation.*
 *.swp
+advanced.py
 
 /DL/__pycache__/*
 /DL/.ipynb_checkpoints/*

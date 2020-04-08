@@ -2,6 +2,7 @@
 
 import numpy as np
 import networkx as nx
+import matplotlib.pyplot as plt
 
 import tubemap
 
@@ -75,33 +76,32 @@ def shortest_path(start, end, Q):
   while next_action != end:
     next_action = np.argmax(Q[next_action,])
     path.append(next_action)
-  return [tubemap.num_convert(station) for station in path]
-
+  #return len([tubemap.num_convert(station) for station in path])
+  return len(path)
 # Starts randomly for a set amount of episodes, updating Q as it goes along
 # Implemented greedy-epsilon policy, where epsilon is reduced on each episode
-def learn(R, learning_rate, gamma, num_episodes, graph, policy, par, end):
+def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, start, end):
   assert policy == 'boltzmann' or policy == 'epsilon'
   Q = initialise_Q(graph)
-  steps = [0]*num_episodes
+  scores = [0]*num_episodes
+  #steps = [0]*num_episodes
+  cumulative_reward = 0
+  step = 0
   for i in range(num_episodes):
-    parameter = par
     loc = np.random.randint(0, len(graph))
-    start_loc = loc
     while loc != end:
-      start = loc
+      start_loc = loc
       if policy == 'boltzmann':
         loc = boltzmann_policy(loc, parameter, graph, Q)
-        if i % 500 == 0:
-          parameter *= 0.99
       elif policy == 'epsilon':
         loc = epsilon_policy(loc, parameter, graph, Q)
-        if parameter < 0.5:
-          parameter *= 0.9999
-        else:
-          parameter *= 0.99999
       update_Q(start, loc, learning_rate, gamma, Q, R)
-    steps[i] = len(shortest_path(start_loc, end, Q)) 
-  return steps
+      cumulative_reward += R[start_loc, loc]
+      step += 1
+    scores[i] += cumulative_reward / step
+    #steps[i] += shortest_path(start, end, Q)
+    parameter *= 0.99 
+  return scores#, steps
 
 if __name__ == '__main__':
   while True:
@@ -116,7 +116,8 @@ if __name__ == '__main__':
       break
   g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, end)
-  #Q = initialise_Q(g)
+  scores = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 1000, graph = g, policy = 'epsilon', parameter = 1.0, start = start, end=end) 
+  plt.plot(scores)
+  #plt.plot(steps)
+  plt.show()
 
-  print(
-  learn(R, learning_rate = 0.8, gamma = 0.8, num_episodes = 200, graph = g, policy = 'epsilon', par = 0.8, end=end)) 

@@ -1,6 +1,5 @@
 mess.*
 DataAnalysis.*
-evaluation.*
 Visualisation.*
 *.swp
 advanced.py

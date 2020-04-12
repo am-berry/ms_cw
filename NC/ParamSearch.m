@@ -46,7 +46,16 @@ y_train = table2array(y_train);
 X_test = table2array(X_test);
 y_test = table2array(y_test);
 
-%% Perform Hyperparameter Tuning
+%% Set up k-fold cross validation partitions
+
+num_folds = 4;
+idx = randperm(numel(y_train), size(y_train, 1));
+x = X_train(idx, :);
+y = y_train(idx, :);
+cv = cvpartition(y_train(idx), 'KFold', num_folds, 'Stratify', true);
+
+
+%% Grid search for SVM
 
 % Tuning over the three types of kernel function
 KernelFunction = ["linear", "rbf", "polynomial"];
@@ -57,17 +66,11 @@ BoxConstraint = linspace(1,20,20);
 Gamma = logspace(-2, 1, 4); % values of 0.01, 0.1, 1, 10
 
 n = 0; % counter
+% preallocating arrays for storing errors 
 train_svm_error = zeros(1,240);
-test_svm_error = zeros(1,240); % storing accuracy in an array
-
-num_folds = 4;
-idx = randperm(numel(y_train), size(y_train, 1));
-x = X_train(idx, :);
-y = y_train(idx, :);
-cv = cvpartition(y_train(idx), 'KFold', num_folds, 'Stratify', true);
+test_svm_error = zeros(1,240); 
 
 tic;
-%%
 % Iterate over the three types of function
 for i=1:length(KernelFunction)
     % Iterate over the list of box constraints
@@ -118,6 +121,7 @@ n=0;
 train_net_error = zeros(1,36); 
 test_net_error = zeros(1,36);
 
+tic;
 for i=1:length(first_hl_size)
     for j=1:length(second_hl_size)
      % loop over the different first and second hidden layer sizes
@@ -163,7 +167,10 @@ for i=1:length(first_hl_size)
         end 
     end
 end
-%%
+time=toc;
+disp(time);
+
+%% write diff values to csv
 
 writematrix(X_test, 'test_features.csv');
 writematrix(y_test, 'test_targets.csv');

@@ -46,7 +46,16 @@ y_train = table2array(y_train);
 X_test = table2array(X_test);
 y_test = table2array(y_test);
 
-%% Perform Hyperparameter Tuning
+%% Set up cross validation partitions
+
+num_folds = 4;
+idx = randperm(numel(y_train), size(y_train, 1));
+x = X_train(idx, :);
+y = y_train(idx, :);
+cv = cvpartition(y_train(idx), 'KFold', num_folds, 'Stratify', true);
+
+
+%% Set up grid search for SVM
 
 % Tuning over the three types of kernel function
 KernelFunction = ["linear", "rbf", "polynomial"];
@@ -57,17 +66,11 @@ BoxConstraint = linspace(1,20,20);
 Gamma = logspace(-2, 1, 4); % values of 0.01, 0.1, 1, 10
 
 n = 0; % counter
+% preallocating arrays for storing errors 
 train_svm_error = zeros(1,240);
-test_svm_error = zeros(1,240); % storing accuracy in an array
-
-num_folds = 4;
-idx = randperm(numel(y_train), size(y_train, 1));
-x = X_train(idx, :);
-y = y_train(idx, :);
-cv = cvpartition(y_train(idx), 'KFold', num_folds, 'Stratify', true);
+test_svm_error = zeros(1,240); 
 
 tic;
-%%
 % Iterate over the three types of function
 for i=1:length(KernelFunction)
     % Iterate over the list of box constraints
@@ -111,26 +114,26 @@ first_hl_size = [5, 10, 15];
 second_hl_size = [5, 10, 15];
 
 % learning rates to parameterise
-lrs = logspace(-2,1,4);
+lrs = [0.01, 0.05, 0.1, 0.5];
 
 n=0;
 % preallocating arrays for storing errors
-train_net_error = zeros(1,12); 
-test_net_error = zeros(1,12);
+train_net_error = zeros(1,36); 
+test_net_error = zeros(1,36);
 
 for i=1:length(first_hl_size)
     for j=1:length(second_hl_size)
-        
-% loop over each of the hidden layer options
+     % loop over the different first and second hidden layer sizes
         for k=1:length(lrs)
-    % loop over the different learning rates 
+         % loop over the different learning rates 
             avg_train_acc = 0;
             avg_test_acc = 0;
             for l=1:num_folds
-        % k fold cross validation, training each nn on a different fold
-                net = fitnet([first_hl_size(i), second_hl); 
+            % k fold cross validation, training each nn on a different fold
+                net = fitnet([first_hl_size(i), second_hl_size(j)]); 
                 net.trainFcn = 'trainbr';% bayesian regularisation backprop training
-                net.trainParam.lr = lrs(j);
+                net.trainParam.lr = lrs(k);
+                net.trainParam.epochs = 75;
                 net = train(net, x(cv.training(l),:)', y(cv.training(l))');
                 net_train_pred = net(x(cv.training(l),:)'); % train set preds 
                 net_test_pred = net(x(cv.test(l),:)'); % test set preds
@@ -163,4 +166,11 @@ for i=1:length(first_hl_size)
         end 
     end
 end
+%%
 
+writematrix(X_test, 'test_features.csv');
+writematrix(y_test, 'test_targets.csv');
+writematrix(train_net_error, 'net_train_errors.csv');
+writematrix(test_net_error, 'net_test_errors.csv');
+writematrix(train_svm_error, 'svm_train_errors.csv');
+%writematrix(test_svm_error, 'svm_test_errors.csv');

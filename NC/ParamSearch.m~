@@ -111,26 +111,26 @@ first_hl_size = [5, 10, 15];
 second_hl_size = [5, 10, 15];
 
 % learning rates to parameterise
-lrs = [0.01, 0.05, 0.1, 0.5];
+lrs = logspace(-2,1,4);
 
 n=0;
 % preallocating arrays for storing errors
-train_net_error = zeros(1,36); 
-test_net_error = zeros(1,36);
+train_net_error = zeros(1,12); 
+test_net_error = zeros(1,12);
 
 for i=1:length(first_hl_size)
     for j=1:length(second_hl_size)
-     % loop over the different first and second hidden layer sizes
+        
+% loop over each of the hidden layer options
         for k=1:length(lrs)
-         % loop over the different learning rates 
+    % loop over the different learning rates 
             avg_train_acc = 0;
             avg_test_acc = 0;
             for l=1:num_folds
-            % k fold cross validation, training each nn on a different fold
-                net = fitnet([first_hl_size(i), second_hl_size(j)]); 
+        % k fold cross validation, training each nn on a different fold
+                net = fitnet([first_hl_size(i), second_hl); 
                 net.trainFcn = 'trainbr';% bayesian regularisation backprop training
-                net.trainParam.lr = lrs(k);
-                net.trainParam.epochs = 75;
+                net.trainParam.lr = lrs(j);
                 net = train(net, x(cv.training(l),:)', y(cv.training(l))');
                 net_train_pred = net(x(cv.training(l),:)'); % train set preds 
                 net_test_pred = net(x(cv.test(l),:)'); % test set preds
@@ -163,11 +163,4 @@ for i=1:length(first_hl_size)
         end 
     end
 end
-%%
 
-writematrix(X_test, 'test_features.csv');
-writematrix(y_test, 'test_targets.csv');
-writematrix(train_net_error, 'net_train_errors.csv');
-writematrix(test_net_error, 'net_test_errors.csv');
-writematrix(train_svm_error, 'svm_train_errors.csv');
-%writematrix(test_svm_error, 'svm_test_errors.csv');

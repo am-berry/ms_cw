@@ -63,6 +63,7 @@ for i = 1:num_folds
     
     tic;
     net = fitnet(5);
+    
     net = train(net, xtrain', ytrain');
     net_tt = toc;
     tic;

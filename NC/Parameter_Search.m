@@ -10,13 +10,13 @@ data = readtable(data_dir,opts);
 
 %% Data Preprocessing
 
-% Convert diagnosis to binary
-% Sort the columns a bit, remove irrelevant ID column
+% Convert diagnosis to binary (0,1)
+% Rearranging columns and removing the ID column
 new_variable = cat2binary(data.diagnosis,{'M','B'},[1,0]);
 data.id = new_variable;
 data.Properties.VariableNames{1} = 'target';
 
-
+% features to remove from our initial analysis
 colsDrop = {'perimeter_mean', 'area_mean', 'concavity_mean',...
             'concavePoints_mean', 'perimeter_se', 'area_se',...
             'concavity_se', 'fractal_dimension_se','radius_worst',...
@@ -26,8 +26,7 @@ colsDrop = {'perimeter_mean', 'area_mean', 'concavity_mean',...
         
 data = removevars(data,colsDrop);
 
-% Cross validation (train: 90%, test: 10%) because our dataset is
-% relatively small
+% Extracting our holdout set for later model comparison
 rng('default');
 cv = cvpartition(size(data,1),'HoldOut',0.1);
 idx = cv.test;
@@ -64,7 +63,7 @@ KernelFunction = ["linear", "rbf", "polynomial"];
 % Tuning over the Gamma and Box constraint hyperparameters
 BoxConstraint = [1, 5, 10];
 
-Gamma = logspace(-3, 0, 4); % values of 0.01, 0.1, 1, 10
+Gamma = logspace(-3, 0, 4); % values of 0.001, 0.01, 0.1, 1.0
 
 n = 0; % counter
 % preallocating arrays for storing errors 
@@ -103,16 +102,10 @@ end
 
 time = toc;
 disp(time);
-%% Using the OptimizeHyperparameters function in the fitcsvm method -> Bayesian optimisation
 
-model = fitcsvm(X_train, y_train, 'OptimizeHyperparameters', 'auto', ...
-    'HyperparameterOptimizationOptions', struct('AcquisitionFunctionName',...
-    'expected-improvement-plus'));
+%% Hyperparameter search for MLP
 
-
-%% Hyperparameter search for Feedforward neural network
-
-% inner lists are the num of neurons in each hidden layer
+% sizes of the hidden layers 
 first_hl_size = [5, 10, 15];
 second_hl_size = [5, 10, 15];
 
@@ -137,7 +130,7 @@ for i=1:length(first_hl_size)
                 net = fitnet([first_hl_size(i), second_hl_size(j)]); 
                 net.trainFcn = 'trainbr';% bayesian regularisation backprop training
                 net.trainParam.lr = lrs(k);
-                net.trainParam.epochs = 75;
+                net.trainParam.epochs = 75; % reduced to 75 epochs to avoid overfit
                 net = train(net, x(cv.training(l),:)', y(cv.training(l))');
                 net_train_pred = net(x(cv.training(l),:)'); % train set preds 
                 net_test_pred = net(x(cv.test(l),:)'); % test set preds
@@ -173,12 +166,12 @@ end
 time=toc;
 disp(time);
 
-%% write diff values to csv
+%% write pertinent data to csv for later use 
 
-%writematrix(X_test, 'test_features_reduced.csv');
-%writematrix(y_test, 'test_targets_reduced.csv');
-%writematrix(X_train, 'train_features_reduced.csv');
-%writematrix(y_train, 'train_targets_reduced.csv');
+writematrix(X_test, 'test_features_reduced.csv');
+writematrix(y_test, 'test_targets_reduced.csv');
+writematrix(X_train, 'train_features_reduced.csv');
+writematrix(y_train, 'train_targets_reduced.csv');
 %writematrix(train_net_error, 'net_train_errors_reduced.csv');
 %writematrix(test_net_error, 'net_test_errors_reduced.csv');
 %writematrix(train_svm_error, 'svm_train_errors_reduced.csv');

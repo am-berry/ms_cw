@@ -1,12 +1,13 @@
-% In this script we are going to build the two classifiers using K-fold 
-% cross-validation and produce important results for an effective comparison.
+% Evaluate the performance of each algorithm's best model through testing
+% on the unseen data held out previously
 
 % Clear Workspace 
 clear all;
 
 %% Importing the Dataset
 
-% Create a table of the Dataset
+% Loading in the train and test sets which were separated in the
+% Parameter_Search.m file 
 
 dir = sprintf('%s/train_features_reduced.csv', pwd);
 opts = detectImportOptions(dir,'NumHeaderLines',0);
@@ -25,10 +26,6 @@ y_test = readtable(dir,opts);
 
 %% Light preprocessing
 
-X_train = table2array(X_train);
-y_train = table2array(y_train);
-X_test = table2array(X_test);
-y_test = table2array(y_test);
 X_train = table2array(X_train);
 y_train = table2array(y_train);
 X_test = table2array(X_test);
@@ -76,9 +73,7 @@ svm_train_time = toc;
 tic;
 svm_test_pred = predict(SVM, X_test);
 svm_test_time = toc;
-% saving the two models
-saveCompactModel(net,'neural_network_best');
-saveCompactModel(SVM,'svm_best');
+
 %% Confusion matrices
 
 figure(1);

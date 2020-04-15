@@ -3,6 +3,10 @@ DataAnalysis.*
 Visualisation.*
 *.swp
 advanced.py
+*.csv
+!data.csv
+*.xlsx
+*.asv
 
 /DL/__pycache__/*
 /DL/.ipynb_checkpoints/*

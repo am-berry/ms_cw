@@ -7,6 +7,13 @@ advanced.py
 !data.csv
 *.xlsx
 *.asv
+*.zip
+*.JPG
+*.PNG
+*.mp4
+*.weights
+*.pth
+*.pb
 
 /DL/__pycache__/*
-/DL/.ipynb_checkpoints/*
+/*/.ipynb_checkpoints/*

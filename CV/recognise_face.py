@@ -18,6 +18,10 @@ from retinaface_utils import *
 import numpy as np
 import cv2
 
+import recogniser
+
+import joblib
+
 import ctypes
 ctypes.cdll.LoadLibrary('caffe2_nvrtc.dll')
 
@@ -36,11 +40,21 @@ def recognise_face(image, feature_type=False, classifier_type=False, creative_mo
   
   img = cv2.imread(image, cv2.IMREAD_COLOR)
   face_dict = {}
-  for face in faces:
+  if classifier_type == 'cnn':
+      model = recogniser.Model()
+      model.load_state_dict(torch.load(...))
+  if classifier_type == 'svm' and feature_type == 'hog':
+      model = joblib.load('svm_hog.joblib')
+  if classifier_type == 'svm' and feature_type == 'sift':
+      model = joblib.load('svm_sift.joblib')
+  if classifier_type == 'svm' and feature_type
+ 
+ for face in faces:
     centre = ((face[2]-face[0]) / 2, (face[3]-face[1]) / 2)
     face_dict[centre] = img[int(face[1]):int(face[3]), int(face[0]):int(face[2])]
     cv2.imwrite(f'img{centre[0]}_{centre[1]}.JPG', face_dict[centre])
+    
   return face_dict 
   
 if __name__ == '__main__':
-  print(recognise_face('IMG_6831.JPG'))
+    print(recognise_face('IMG_6831.JPG'))

@@ -94,13 +94,12 @@ def text_detect(image_path, net, conf_thresh, nms_thresh):
         scores, geometry = net.forward(layerNames)
         print('Image passed through network.')
         rects, confidences = decode_predictions(scores, geometry, conf_thresh)
-        ind = cv.dnn.NMSBoxesRotated(rects, confidences, conf_thresh, nms_thresh)
-        #boxes = non_max_suppression(np.array(rects), probs=confidences)
-        if len(ind) == 0:   
+        boxes = non_max_suppression(np.array(rects), probs=confidences, nms_thresh)
+        if len(boxes) == 0:   
             text_detect_fails.append(im)
             continue
         likely_id = ""
-        for startX, startY, endX, endY in ind:
+        for startX, startY, endX, endY in boxes:
             startX = int(startX*rW)
             startY = int(startY*rH)
             endX = int(endX*rW)

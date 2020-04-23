@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# This script is adapted heavily from https://github.com/biubug6/Pytorch_Retinaface 
+# This script is adapted from https://github.com/biubug6/Pytorch_Retinaface 
 
 import os
 import torch

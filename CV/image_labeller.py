@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+#text detection adapted from opencv text_detection.py - https://github.com/opencv/opencv/blob/master/samples/dnn/text_detection.py
 
 import os 
 
@@ -10,7 +11,7 @@ import cv2
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-def decode_predictions(scores, geometry):
+def decode_predictions(scores, geometry, conf_thresh):
     	# grab the number of rows and columns from the scores volume, then
 	# initialize our set of bounding box rectangles and corresponding
 	# confidence scores
@@ -34,7 +35,7 @@ def decode_predictions(scores, geometry):
 		for x in range(0, numCols):
 			# if our score does not have sufficient probability,
 			# ignore it
-			if scoresData[x] < 0.95:
+			if scoresData[x] < conf_thresh:
 				continue
 
 			# compute the offset factor as our resulting feature
@@ -67,7 +68,7 @@ def decode_predictions(scores, geometry):
 	# return a tuple of the bounding boxes and associated confidences
 	return (rects, confidences)
 
-def text_detect(image_path, net):
+def text_detect(image_path, net, conf_thresh, nms_thresh):
     im_list = [file for file in os.listdir(image_path) if file.endswith('.JPG')]
     im_num = len(im_list)
     results = {}
@@ -92,13 +93,14 @@ def text_detect(image_path, net):
         net.setInput(blob)
         scores, geometry = net.forward(layerNames)
         print('Image passed through network.')
-        rects, confidences = decode_predictions(scores, geometry)
-        boxes = non_max_suppression(np.array(rects), probs=confidences)
-        if len(boxes) == 0:   
+        rects, confidences = decode_predictions(scores, geometry, conf_thresh)
+        ind = cv.dnn.NMSBoxesRotated(rects, confidences, conf_thresh, nms_thresh)
+        #boxes = non_max_suppression(np.array(rects), probs=confidences)
+        if len(ind) == 0:   
             text_detect_fails.append(im)
             continue
         likely_id = ""
-        for startX, startY, endX, endY in boxes:
+        for startX, startY, endX, endY in ind:
             startX = int(startX*rW)
             startY = int(startY*rH)
             endX = int(endX*rW)
@@ -120,17 +122,18 @@ def text_detect(image_path, net):
         if len(likely_id) == 0:
             text_recognition_fails.append(im)
             continue
-        results[im[4:8]] = text
+        results[im[4:8]] = likely_id 
     return results, text_detect_fails, text_recognition_fails
 
 if __name__ == '__main__':
     net = cv2.dnn.readNet('frozen_east_text_detection.pb')
     print('Read in text detection network')
-    res, det_fail, rec_fail = text_detect('./IndividualImages1/', net=net)
-    print(res)
-    print(det_fail, rec_fail)
-    with open('results_1.txt', 'w') as f:
-        for k, v in res.items():
-            f.write(str(k)+" "+str(v) + "\n")
-
+    test_list = [file for file in os.listdir() if file.contains('IndividualImages')]
+    for i in test_list:
+        res, det_fail, rec_fail = text_detect('./IndividualImages1/', net=net, conf_thresh=0.95, nms_thresh = 0.3)
+        print(res)
+        print(det_fail, rec_fail)
+        with open(f'results_{i}.txt', 'w') as f:
+            for k, v in res.items():
+                f.write(str(k)+" "+str(v) + "\n") 
     

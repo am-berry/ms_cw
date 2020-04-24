@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #text detection adapted from opencv text_detection.py - https://github.com/opencv/opencv/blob/master/samples/dnn/text_detection.py
 
 import os 
@@ -94,7 +93,7 @@ def text_detect(image_path, net, conf_thresh, nms_thresh):
         scores, geometry = net.forward(layerNames)
         print('Image passed through network.')
         rects, confidences = decode_predictions(scores, geometry, conf_thresh)
-        boxes = non_max_suppression(np.array(rects), probs=confidences, nms_thresh)
+        boxes = non_max_suppression(np.array(rects), probs=confidences, overlapThresh = nms_thresh)
         if len(boxes) == 0:   
             text_detect_fails.append(im)
             continue
@@ -116,7 +115,6 @@ def text_detect(image_path, net, conf_thresh, nms_thresh):
             text = pytesseract.image_to_string(roi, config="-l eng --oem 3 --psm 7 digits")
             if len(text) == 2:
                 likely_id = text
-                cv2.imwrite(f'{im}_identified.PNG', roi)       
                 print(f'IDENTIFIED! - {text}')
         if len(likely_id) == 0:
             text_recognition_fails.append(im)
@@ -127,11 +125,15 @@ def text_detect(image_path, net, conf_thresh, nms_thresh):
 if __name__ == '__main__':
     net = cv2.dnn.readNet('frozen_east_text_detection.pb')
     print('Read in text detection network')
-    test_list = [file for file in os.listdir() if file.contains('IndividualImages')]
+    test_list = [file for file in os.listdir() if 'IndividualImages' in file]
     for i in test_list:
-        res, det_fail, rec_fail = text_detect('./IndividualImages1/', net=net, conf_thresh=0.95, nms_thresh = 0.3)
+        res, det_fail, rec_fail = text_detect(f'{i}/', net=net, conf_thresh=0.95, nms_thresh = 0.4)
         print(res)
-        print(det_fail, rec_fail)
+        print("----------")
+        print(det_fail)
+        print("----------")
+        print(rec_fail)
+        print("----------")
         with open(f'results_{i}.txt', 'w') as f:
             for k, v in res.items():
                 f.write(str(k)+" "+str(v) + "\n") 

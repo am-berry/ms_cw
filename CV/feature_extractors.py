@@ -4,5 +4,7 @@ import os
 
 import numpy as np
 import cv2
+import sklearn
 
+define sift_extract(img):
 

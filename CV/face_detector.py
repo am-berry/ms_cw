@@ -104,4 +104,18 @@ def face_detector(img, out_name, net, save_image=True):
         if face[4] > vis_thres:
             results.append(face) 
 
-    return results # returns the bounding boxes 
+    return results # returns the bounding boxes
+
+if __name__ == '__main__':
+  net = RetinaFace(cfg = cfg_re50, phase = 'test')
+  net = load_model(net, 'Resnet50_Final.pth', False)
+  net.eval()
+  print('Model loaded successfully')
+  cudnn.benchmark = True
+  device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+  net = net.to(device)
+  
+  individual_list = [file for file in os.listdir() if file.contains('IndividualImages')]
+  for ind in individual_list:
+    im_list = [file for file in os.listdir(image_path) if file.endswith('.JPG')]
+

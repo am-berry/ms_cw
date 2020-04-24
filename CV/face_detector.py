@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # This script is adapted from https://github.com/biubug6/Pytorch_Retinaface 
 
 import os
@@ -16,7 +15,6 @@ from retinaface_utils import *
 
 import numpy as np
 import cv2
-
 
 def face_detector(img, out_name, net, save_image=True):
     torch.set_grad_enabled(False)
@@ -42,10 +40,8 @@ def face_detector(img, out_name, net, save_image=True):
         resize = float(max_size) / float(im_size_max)
     if origin_size:
         resize = 1
-
     if resize != 1:
         img = cv2.resize(img, None, None, fx=resize, fy=resize, interpolation=cv2.INTER_LINEAR)
-
     im_height, im_width, _ = img.shape
     scale = torch.Tensor([img.shape[1], img.shape[0], img.shape[1], img.shape[0]])
     img -= (104, 117, 123)
@@ -115,7 +111,14 @@ if __name__ == '__main__':
   device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
   net = net.to(device)
   
-  individual_list = [file for file in os.listdir() if file.contains('IndividualImages')]
+  individual_list = [file for file in os.listdir() if 'IndividualImages' in file and ".txt" not in file]
   for ind in individual_list:
-    im_list = [file for file in os.listdir(image_path) if file.endswith('.JPG')]
-
+    print(f"Working on dir {ind}")
+    im_list = [file for file in os.listdir(f'./{ind}/') if file.endswith('.JPG')]
+    im_len = len(im_list)
+    for i, pic in enumerate(im_list):
+      print(f"iter {i+1} of {im_len} - {pic}") 
+      faces = face_detector(f'./{ind}/{pic}', f'{pic[4:-4]}', net, save_image=False)
+      im = cv2.imread(f'./{ind}/{pic}', cv2.IMREAD_COLOR)
+      for face in faces:
+        cv2.imwrite(f'./results/{pic[4:-4]}.JPG', im[int(face[1]):int(face[3]), int(face[0]):int(face[2])])

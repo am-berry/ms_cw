@@ -15,5 +15,6 @@ advanced.py
 *.pth
 *.pb
 
+/CV/cv/
 /DL/__pycache__/*
 /*/.ipynb_checkpoints/*

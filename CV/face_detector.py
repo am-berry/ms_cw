@@ -16,7 +16,7 @@ from retinaface_utils import *
 import numpy as np
 import cv2
 
-def face_detector(img, out_name, net, save_image=True):
+def face_detector(img, net, out_name = None, save_image=True):
     torch.set_grad_enabled(False)
     cfg = cfg_re50
     origin_size = True

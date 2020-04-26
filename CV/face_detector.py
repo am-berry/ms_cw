@@ -22,7 +22,7 @@ def face_detector(img, net, out_name = None, save_image=True):
     origin_size = True
     confidence_threshold = 0.02
     nms_threshold = 0.4
-    vis_thres = 0.98
+    vis_thres = 0.998
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # load img in 
     img_raw = cv2.imread(img, cv2.IMREAD_COLOR)

@@ -29,6 +29,59 @@ ctypes.cdll.LoadLibrary('caffe2_nvrtc.dll')
 
 class_names = os.listdir('./images/train/')
 
+
+def recognise_face_cnn(detected_dir):
+  device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+  model = models.resnet50(pretrained=False)
+  num_f = model.fc.in_features
+  model.fc = nn.Linear(num_f, 48)
+  model.load_state_dict(torch.load("Resnet50_retrained.pth", map_location=device))
+  model.to(device)
+  model.eval()
+  data_transforms = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    ])
+  classes = datasets.ImageFolder('./images/train/').classes 
+  labels = {}
+  proba = []
+  for im in os.listdir(detected_dir):
+    lab, img, probs = cnn_inference(f'{detected_dir}/{im}', model, classes, data_transforms)
+    labels[im] = list(probs)
+    proba.append(list(probs))
+
+  proba.sort(key=max, reverse=True)
+  ord = []
+  argmaxes = []
+  probs = []
+  for prob in proba:
+    for k, v in labels.items():
+      if p == v:
+        ord.append(k)
+    n = 0
+    sorted_ps = sorted(prob, reverse=True)
+    while prob.index(sorted_ps[n]) in argmaxes:
+      n+=1
+    argmaxes.append(prob.index(sorted_ps[n]))
+    probs.append(sorted_ps[n])
+  labs = []
+  for i in argmaxes:
+    labs.append(classes[i])
+  fin = dict(zip(ord, labs))
+  return fin, probs 
+
+def cnn_inference(img, model, labels, data_transforms):
+  device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+  im = PIL.Image.open(img)
+  face_tensor = data_transforms(im).float().unsqueeze_(0)
+  inp = Variable(face_tensor).to(device)
+  out = model(inp)
+  probs = nn.functional.softmax(out).cpu().detach().numpy().flatten()
+  index = out.data.cpu().numpy().argmax()
+  return labels[index], img, probs
+
 def recognise_face(image, feature_type=False, classifier_type=False, creative_mode=0):
   # load retinaface model 
   net = RetinaFace(cfg=cfg_re50, phase = 'test')
@@ -45,40 +98,28 @@ def recognise_face(image, feature_type=False, classifier_type=False, creative_mo
   img = cv2.imread(image, cv2.IMREAD_COLOR)
 
   face_dict = {}
-  if classifier_type == 'cnn':
-    model = models.resnet50(pretrained=False)
-    num_f = model.fc.in_features
-    model.fc = nn.Linear(num_f, 48)
-    model.load_state_dict(torch.load("Resnet50_retrained.pth", map_location=device))
-    model.to(device)
-    model.eval()
-    data_transforms = transforms.Compose([
-      transforms.Resize(256),
-      transforms.CenterCrop(224),
-      transforms.ToTensor(),
-      transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-      ])
-  tensor = torch.Tensor(1,3,224,224)
   centres = []
   results = {}
-  idx = []
   for face in faces:
-    centre = (int((face[2]-face[0]) / 2), int((face[3]-face[1]) / 2))
+    centre = (int((face[2]+face[0]) / 2), int((face[3]+face[1]) / 2))
     centres.append(centre)
     face_dict[centre] = img[int(face[1]):int(face[3]), int(face[0]):int(face[2])]
-    face = PIL.Image.fromarray(face_dict[centre])
-    face_tensor = data_transforms(face).float()
-    face_tensor = face_tensor.unsqueeze_(0)
-    inp = Variable(face_tensor).to(device)
-    out = model(inp)
-    index = out.data.cpu().numpy().argmax()
-    results[index] = centre
-    idx.append(index)
-  return face_dict, results, centres, idx
-  
+    cv2.imwrite(f'./det_faces/face_{centre[0]}_{centre[1]}.PNG', face_dict[centre])
+
+  if classifier_type == 'cnn':
+    fin, prob = recognise_face_cnn('./det_faces/')
+     
+  return fin, prob 
+
 if __name__ == '__main__':
-    face, results, centres, idx = recognise_face('IMG_6851.JPG', classifier_type = 'cnn')
-    im = cv2.imread('IMG_6851.JPG')
-    font = cv2.FONT_HERSHEY_SIMPLEX
-    for k, v in results.items():
-      print(class_names[k])
+  im = 'IMG_6854.JPG'
+  fin, prob = recognise_face(im, classifier_type = 'cnn')
+  im = cv2.imread(im)
+  centres = [tuple(x.strip('.JPG').strip('.PNG').split('_')[1:3]) for x in fin.keys()]
+  for x,y,z in zip(centres, fin.values(), prob):
+    print(f'{x} - {y} - {z}')
+    im = cv2.putText(im, f'{y} - Probability {z:.3f}', (int(x[0]), int(x[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
+  cv2.imshow('img', im)
+  cv2.waitKey(0)
+  cv2.destroyAllWindows()
+  cv2.imwrite('results.JPG', im)

@@ -1,41 +1,40 @@
-import face_detector
-
 import os
-import torch
+import argparse
+import glob 
+import time
+import joblib
+
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
 from torch.autograd import Variable
 import torchvision
 from torchvision import datasets, models, transforms
 
-import PIL
-
-from retinaface.models.retinaface import RetinaFace
-from retinaface.utils.box_utils import decode
-from retinaface.utils.timer import Timer
-from retinaface.data import cfg_re50
-from retinaface.layers.functions.prior_box import PriorBox
-from retinaface.utils.nms.py_cpu_nms import py_cpu_nms
-
-from retinaface_utils import * 
-
+from scipy.cluster.vq import vq
 import numpy as np
 import cv2
+import PIL
 
-import joblib
+import face_detector
+import creative
+from retinaface.models.retinaface import RetinaFace
+from retinaface.data import cfg_re50
+from retinaface_utils import * 
+import feature_extractors
 
 import ctypes
 ctypes.cdll.LoadLibrary('caffe2_nvrtc.dll')
 
-class_names = os.listdir('./images/train/')
-
-
-def recognise_face_cnn(detected_dir):
+class_names =['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', 
+'16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', 
+'33', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60', '78']
+ 
+def recognise_face_cnn(detected_dir, class_names):
   device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
   model = models.resnet50(pretrained=False)
   num_f = model.fc.in_features
   model.fc = nn.Linear(num_f, 48)
-  model.load_state_dict(torch.load("Resnet50_retrained.pth", map_location=device))
+  model.load_state_dict(torch.load("./models/1Resnet50_retrained.pth", map_location=device))
   model.to(device)
   model.eval()
   data_transforms = transforms.Compose([
@@ -44,11 +43,10 @@ def recognise_face_cnn(detected_dir):
     transforms.ToTensor(),
     transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
-  classes = datasets.ImageFolder('./images/train/').classes 
   labels = {}
   proba = []
   for im in os.listdir(detected_dir):
-    lab, img, probs = cnn_inference(f'{detected_dir}/{im}', model, classes, data_transforms)
+    lab, img, probs = cnn_inference(f'{detected_dir}/{im}', model, class_names, data_transforms)
     labels[im] = list(probs)
     proba.append(list(probs))
 
@@ -58,7 +56,7 @@ def recognise_face_cnn(detected_dir):
   probs = []
   for prob in proba:
     for k, v in labels.items():
-      if p == v:
+      if prob == v:
         ord.append(k)
     n = 0
     sorted_ps = sorted(prob, reverse=True)
@@ -68,7 +66,7 @@ def recognise_face_cnn(detected_dir):
     probs.append(sorted_ps[n])
   labs = []
   for i in argmaxes:
-    labs.append(classes[i])
+    labs.append(class_names[i])
   fin = dict(zip(ord, labs))
   return fin, probs 
 
@@ -82,10 +80,38 @@ def cnn_inference(img, model, labels, data_transforms):
   index = out.data.cpu().numpy().argmax()
   return labels[index], img, probs
 
-def recognise_face(image, feature_type=False, classifier_type=False, creative_mode=0):
+def recognise_face_classic(detected_dir, classifier, extractor, detector, scaler, vocab):
+  if extractor == "sift" and classifier == 'svm':
+    model = joblib.load("./models/SVM_SIFT.joblib")
+  if extractor == "surf" and classifier == 'svm':
+    model = joblib.load("./models/SVM_SURF.joblib")
+
+  if extractor == "sift" and classifier == 'rf':
+    model = joblib.load("./models/RF_SIFT.joblib")
+  if extractor == "surf" and classifier == 'rf':
+    model = joblib.load("./models/RF_SURF.joblib")
+
+  outs = {}
+  for im in os.listdir(detected_dir):
+    img = cv2.imread(f'{detected_dir}/{im}')
+    img = cv2.resize(img, (224,224))
+    kp, des = detector.detectAndCompute(img, None)
+    im_features = np.zeros(800, 'float32')
+    words, distance = vq(des, vocab)
+    for w in words:
+      im_features[w] += 1
+    bovw = scaler.transform(im_features.reshape(1,-1))
+    preds = model.predict(bovw)[0]
+    outs[im] = preds
+  return outs
+
+def recognise_face(image, feature_type='sift', classifier_type='svm', creative_mode=0):
+  class_names =['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', 
+  '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', 
+  '33', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60', '78']
   # load retinaface model 
   net = RetinaFace(cfg=cfg_re50, phase = 'test')
-  net = load_model(net, 'Resnet50_Final.pth', False)
+  net = load_model(net, './models/Resnet50_Final.pth', False)
   net.eval()
   print('Model loaded successfully')
   cudnn.benchmark = True
@@ -93,33 +119,68 @@ def recognise_face(image, feature_type=False, classifier_type=False, creative_mo
   net = net.to(device)
 
   # detect faces in image
-  faces = face_detector.face_detector(image, out_name = 'Results', net = net, save_image=True)
+  faces = face_detector.face_detector(image, out_name = 'results', net = net, save_image=True)
   
   img = cv2.imread(image, cv2.IMREAD_COLOR)
 
-  face_dict = {}
   centres = []
+  bboxes = []
   results = {}
+  if not os.path.exists("./det_faces/"):
+    os.mkdir("./det_faces/")
+  else:
+    files = glob.glob("./det_faces/*")
+    for f in files:
+      os.remove(f)
   for face in faces:
     centre = (int((face[2]+face[0]) / 2), int((face[3]+face[1]) / 2))
     centres.append(centre)
-    face_dict[centre] = img[int(face[1]):int(face[3]), int(face[0]):int(face[2])]
-    cv2.imwrite(f'./det_faces/face_{centre[0]}_{centre[1]}.PNG', face_dict[centre])
-
+    image = img[int(face[1]):int(face[3]), int(face[0]):int(face[2])]
+    cv2.imwrite(f'./det_faces/face_{centre[0]}_{centre[1]}.PNG', image)
+    bbox = [int(f) for f in face[0:4]]
+    bboxes.append(bbox)
+  if creative_mode:
+    whole = cv2.imread('./results.jpg', cv2.IMREAD_COLOR)
+    for face in bboxes:
+      roi = whole[face[1]:face[3], face[0]:face[2],:]
+      cartoon = creative.cartoonify(roi)
+      whole[face[1]:face[3], face[0]:face[2], :] = cartoon
+    cv2.imwrite('results.jpg', whole)
+  if feature_type == 'sift':
+    scaler = joblib.load('./models/SIFT_SCALER.bin')
+    vocab = np.load('./models/sift_vocab.npy')
+    detector = cv2.xfeatures2d.SIFT_create()
+  if feature_type == 'surf':
+    scaler = joblib.load('./models/SURF_SCALER.bin')
+    vocab = np.load('./models/surf_vocab.npy')
+    detector = cv2.xfeatures2d.SURF_create()
   if classifier_type == 'cnn':
-    fin, prob = recognise_face_cnn('./det_faces/')
-     
+    fin, prob = recognise_face_cnn('./det_faces/', class_names)
+  else:
+    fin =  recognise_face_classic('./det_faces/', classifier = classifier_type, extractor = feature_type, detector = detector, scaler = scaler, vocab = vocab)
+    prob = None
   return fin, prob 
 
 if __name__ == '__main__':
-  im = 'IMG_6854.JPG'
-  fin, prob = recognise_face(im, classifier_type = 'cnn')
-  im = cv2.imread(im)
+  parser = argparse.ArgumentParser()
+  parser.add_argument('image', type = str, help = 'image filename with appropriate path "./*.JPG/PNG')
+  parser.add_argument('classifier', type = str, help = 'type of classifier, CNN, SVM, RF')
+  parser.add_argument('--features', type = str, help = 'type of feature extractor used, only with SVM and RF - either surf or sift')
+  parser.add_argument('creative_mode', type = bool, default = 0, help = "set 1 to add cartoonifying to faces in group image")
+  args = parser.parse_args()
+  fin, _ = recognise_face(args.image, classifier_type = args.classifier, feature_type = args.features, creative_mode = args.creative_mode)
+  #load in copy of image with bounding boxes added
+  im = cv2.imread('results.jpg', cv2.IMREAD_COLOR)
+  cv2.imshow('img', im)
+  cv2.waitKey(0)
   centres = [tuple(x.strip('.JPG').strip('.PNG').split('_')[1:3]) for x in fin.keys()]
-  for x,y,z in zip(centres, fin.values(), prob):
-    print(f'{x} - {y} - {z}')
-    im = cv2.putText(im, f'{y} - Probability {z:.3f}', (int(x[0]), int(x[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0,0,255), 2, cv2.LINE_AA)
+  for x,y in zip(centres, fin.values()):
+    print(f'{y} {x[0]} {x[1]}')
+    im = cv2.putText(im, f'{y}', (int(x[0]), int(x[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+      
   cv2.imshow('img', im)
   cv2.waitKey(0)
   cv2.destroyAllWindows()
-  cv2.imwrite('results.JPG', im)
+  t = str(time.time()).split('.')[0]
+  
+  cv2.imwrite(f'results{t}.JPG', im)

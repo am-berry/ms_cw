@@ -123,7 +123,7 @@ def text_detect(image_path, net, conf_thresh, nms_thresh):
     return results, text_detect_fails, text_recognition_fails
 
 if __name__ == '__main__':
-    net = cv2.dnn.readNet('frozen_east_text_detection.pb')
+    net = cv2.dnn.readNet('./models/frozen_east_text_detection.pb')
     print('Read in text detection network')
     test_list = [file for file in os.listdir() if 'IndividualImages' in file]
     for i in test_list:

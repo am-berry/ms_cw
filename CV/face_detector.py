@@ -91,9 +91,7 @@ def face_detector(img, net, out_name = None, save_image=True):
                         cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255))
 
         # save image
-        if not os.path.exists("./results/"):
-            os.makedirs("./results/")
-        name = "./results/" + str(out_name) + ".jpg"
+        name = "./" + str(out_name) + ".jpg"
         cv2.imwrite(name, img_raw)
     results = []
     for face in dets:

@@ -25,22 +25,30 @@ def create_networkx_graph(tubemap_dictionary):
 
 # We initialise R by putting a reward of 100 wherever the action is going to the desired end location, and 0s everywhere else
 def initialise_R(nx_graph, end_loc):
-  R = np.matrix(np.zeros(shape=(len(nx_graph),len(nx_graph))))
+  R = -1 * np.matrix(np.ones(shape=(len(nx_graph),len(nx_graph))))
   for node in nx_graph.nodes:
     for x in nx_graph[node]:
-      if node == end_loc:
-        R[x, node] = 100
+      R[x, node] = 0.
+      R[node, x] = 0.
+  for node in nx_graph.nodes:
+    for x in nx_graph[node]:
+      if x == end_loc:
+        R[node,x] = 100.
+        R[x,x] = 100.
   return R
 
 # We initialise Q by giving every state, action pair -100, and then giving any actual connection (state, action) 0 
 def initialise_Q(nx_graph):
   Q = np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
-  Q -= 100
+  Q -= 1
   for node in nx_graph.nodes:
     for x in nx_graph[node]:
-      Q[node, x] = 0
-      Q[x, node] = 0
+      Q[node, x] = 100
+      Q[x, node] = 100
   return Q
+
+#def initialise_Q(nx_graph):
+#  return np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
 
 # We check if epsilon (which we set) is less than a random number between 0 and 1. 
 # If rand < epsilon, the algorithm explores, if rand >= epsilon, we get all states and choose one with the highest reward (randomly if more than 1)
@@ -65,7 +73,31 @@ def update_Q(state, action, learning_rate, gamma, Q, R):
   max_idx = np.where(Q[action,] == np.max(Q[action,]))[1]
   if max_idx.shape[0] > 1:
     max_idx = np.random.choice(max_idx)
-  Q[state, action] = int((1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx]))
+  max_idx = int(max_idx)
+  Q[state, action] = (1-learning_rate)*Q[state, action] + learning_rate*(R[state, action] + gamma* Q[action, max_idx])
+  if np.max(Q) > 0:
+    return np.sum(Q)/np.max(Q)*100
+  else:
+    return 0
+
+# Starts randomly for a set amount of episodes, updating Q as it goes along
+# Implemented greedy-epsilon policy, where epsilon is reduced on each episode
+def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_parameter, start, end):
+  assert policy == 'boltzmann' or policy == 'epsilon'
+  Q = initialise_Q(graph)
+  scores = [0]*num_episodes
+  for i in range(num_episodes):
+    loc = np.random.randint(0, len(graph))
+    start_loc = loc
+    if policy == 'boltzmann':
+      loc = boltzmann_policy(loc, parameter, graph, Q)
+    elif policy == 'epsilon':
+      loc = epsilon_policy(loc, parameter, graph, Q)
+    score = update_Q(start_loc, loc, learning_rate, gamma, Q, R)
+    scores[i] += score
+    if parameter > min_parameter:
+      parameter *= 0.99 
+  return scores, Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
 # Returns a string of the stations in the shortest path separated by ->
@@ -76,32 +108,7 @@ def shortest_path(start, end, Q):
   while next_action != end:
     next_action = np.argmax(Q[next_action,])
     path.append(next_action)
-  #return len([tubemap.num_convert(station) for station in path])
-  return len(path)
-# Starts randomly for a set amount of episodes, updating Q as it goes along
-# Implemented greedy-epsilon policy, where epsilon is reduced on each episode
-def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, start, end):
-  assert policy == 'boltzmann' or policy == 'epsilon'
-  Q = initialise_Q(graph)
-  scores = [0]*num_episodes
-  #steps = [0]*num_episodes
-  cumulative_reward = 0
-  step = 0
-  for i in range(num_episodes):
-    loc = np.random.randint(0, len(graph))
-    while loc != end:
-      start_loc = loc
-      if policy == 'boltzmann':
-        loc = boltzmann_policy(loc, parameter, graph, Q)
-      elif policy == 'epsilon':
-        loc = epsilon_policy(loc, parameter, graph, Q)
-      update_Q(start, loc, learning_rate, gamma, Q, R)
-      cumulative_reward += R[start_loc, loc]
-      step += 1
-    scores[i] += cumulative_reward / step
-    #steps[i] += shortest_path(start, end, Q)
-    parameter *= 0.99 
-  return scores#, steps
+  return [tubemap.num_convert(station) for station in path]
 
 if __name__ == '__main__':
   while True:
@@ -116,8 +123,12 @@ if __name__ == '__main__':
       break
   g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, end)
-  scores = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 1000, graph = g, policy = 'epsilon', parameter = 1.0, start = start, end=end) 
+#  import pandas as pd
+#  with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+#    print(pd.DataFrame(R))
+  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 10000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
   plt.plot(scores)
-  #plt.plot(steps)
   plt.show()
-
+  print('Testing...')
+  steps = shortest_path(start, end, Q)
+  print(steps)

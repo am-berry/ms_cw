@@ -16,6 +16,8 @@ advanced.py
 *.pb
 *.npy
 *.joblib
+a.py
+*.h5
 
 /CV/cv/
 /*/__pycache__/

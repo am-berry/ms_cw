@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import itertools
+
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -25,7 +27,7 @@ def create_networkx_graph(tubemap_dictionary):
 
 # We initialise R by putting a reward of 100 wherever the action is going to the desired end location, and 0s everywhere else
 def initialise_R(nx_graph, end_loc):
-  R = -1 * np.matrix(np.ones(shape=(len(nx_graph),len(nx_graph))))
+  R = -100 * np.matrix(np.ones(shape=(len(nx_graph),len(nx_graph))))
   for node in nx_graph.nodes:
     for x in nx_graph[node]:
       R[x, node] = 0.
@@ -38,17 +40,17 @@ def initialise_R(nx_graph, end_loc):
   return R
 
 # We initialise Q by giving every state, action pair -100, and then giving any actual connection (state, action) 0 
-def initialise_Q(nx_graph):
-  Q = np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
-  Q -= 1
-  for node in nx_graph.nodes:
-    for x in nx_graph[node]:
-      Q[node, x] = 100
-      Q[x, node] = 100
-  return Q
-
 #def initialise_Q(nx_graph):
-#  return np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
+#  Q = np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
+#  Q -= 1
+#  for node in nx_graph.nodes:
+#    for x in nx_graph[node]:
+#      Q[node, x] = 100
+#      Q[x, node] = 100
+#  return Q
+
+def initialise_Q(nx_graph):
+  return np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
 
 # We check if epsilon (which we set) is less than a random number between 0 and 1. 
 # If rand < epsilon, the algorithm explores, if rand >= epsilon, we get all states and choose one with the highest reward (randomly if more than 1)
@@ -126,7 +128,15 @@ if __name__ == '__main__':
 #  import pandas as pd
 #  with pd.option_context('display.max_rows', None, 'display.max_columns', None):
 #    print(pd.DataFrame(R))
-  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 10000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
+  stats = [[x,y] for x in range(59) for y in range(59) if x!=y]
+#  for pair in stats:
+#    start, end = pair
+#    scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 1000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
+#    print('Testing...')
+#    steps = shortest_path(start, end, Q)
+#    print(steps)
+
+  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 1000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
   plt.plot(scores)
   plt.show()
   print('Testing...')

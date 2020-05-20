@@ -39,16 +39,6 @@ def initialise_R(nx_graph, end_loc):
         R[x,x] = 100.
   return R
 
-# We initialise Q by giving every state, action pair -100, and then giving any actual connection (state, action) 0 
-#def initialise_Q(nx_graph):
-#  Q = np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
-#  Q -= 1
-#  for node in nx_graph.nodes:
-#    for x in nx_graph[node]:
-#      Q[node, x] = 100
-#      Q[x, node] = 100
-#  return Q
-
 def initialise_Q(nx_graph):
   return np.matrix(np.zeros(shape = (len(nx_graph), len(nx_graph))))
 
@@ -97,8 +87,10 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
       loc = epsilon_policy(loc, parameter, graph, Q)
     score = update_Q(start_loc, loc, learning_rate, gamma, Q, R)
     scores[i] += score
-    if parameter > min_parameter:
-      parameter *= 0.99 
+    if parameter > 0.5:
+      parameter *= 0.99999
+    if 0.5 > parameter > min_parameter:
+      parameter *= 0.9999
   return scores, Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
@@ -124,6 +116,7 @@ if __name__ == '__main__':
       start = int(tubemap.place_convert(start)) 
       end = int(tubemap.place_convert(end))
       break
+  print(start, end)
   g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, end)
 #  import pandas as pd
@@ -137,7 +130,7 @@ if __name__ == '__main__':
 #    steps = shortest_path(start, end, Q)
 #    print(steps)
 
-  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 10000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
+  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 10000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.05, start = start, end=end) 
   plt.plot(scores)
   plt.show()
   print('Testing...')

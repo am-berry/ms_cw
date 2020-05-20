@@ -16,8 +16,14 @@ def gaussian_blur(img, kernel = (5,5)):
 
 if __name__ == "__main__":
   for pic in os.listdir('./results/'):
-    img = cv2.imread(f'./results/{pic}')
-    resized = resize_im(img)
-    dull = reduce_brightness(resized, val = 0.7)
-    blur = gaussian_blur(dull, kernel = (5,5))
-    cv2.imwrite(f'./results/{pic[:-4]}_augmented.JPG', blur)
+    if "augmented" in pic:
+      continue
+    try:
+      img = cv2.imread(f'./results/{pic}')
+      resized = resize_im(img)
+      dull = reduce_brightness(resized, val = 0.7)
+      blur = gaussian_blur(dull, kernel = (5,5))
+      cv2.imwrite(f'./results/{pic[:-4]}_augmented.JPG', blur)
+    except:
+      os.remove(f'./results/{pic}')
+      continue

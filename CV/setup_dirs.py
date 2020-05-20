@@ -10,7 +10,7 @@ from torchvision import datasets, models, transforms
 
 random.seed(0)
 
-labels = [file for file in os.listdir() if file.endswith('.txt')]
+labels = [file for file in os.listdir() if file.endswith('.txt') and file != 'requirements.txt']
 
 label_dict = {}
 for file in labels:
@@ -31,10 +31,10 @@ for im in os.listdir('./results/'):
 images_dict = {'train':{}, 'val':{}}
 
 for k, v in label_dict.items():
-  val_images = random.sample(v, int(len(v)*0.2))[:10]
+  val_images = random.sample(v, int(len(v)*0.3))
   train_images = list(set(v) - set(val_images))
-  num_train = 40 if len(train_images) > 40 else len(train_images)
-  train_images = random.sample(train_images, num_train)
+#  num_train = 40 if len(train_images) > 40 else len(train_images)
+#  train_images = random.sample(train_images, num_train)
   images_dict['val'][k] = val_images
   images_dict['train'][k] = train_images
 

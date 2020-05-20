@@ -144,8 +144,7 @@ if __name__ == '__main__':
   dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'val']}
   class_names = image_datasets['train'].classes
 
-  #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-  device = 'cpu' 
+  device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
   # Get a batch of training data
   inputs, classes = next(iter(dataloaders['train']))
 
@@ -155,8 +154,8 @@ if __name__ == '__main__':
   #imshow(out, title=[class_names[x] for x in classes])
   
   model_ft = models.resnet34(pretrained=True)
-#  for param in model_ft.parameters():
-#    param.requires_grad = False
+  for param in model_ft.parameters():
+    param.requires_grad = False
   num_ftrs = model_ft.fc.in_features
   # Here the size of each output sample is set to 2.
   # Alternatively, it can be generalized to nn.Linear(num_ftrs, len(class_names)).
@@ -172,7 +171,7 @@ if __name__ == '__main__':
   exp_lr_scheduler = lr_scheduler.StepLR(optimizer_ft, step_size=7, gamma=0.1)
 
   model_ft = train_model(model_ft, criterion, optimizer_ft, exp_lr_scheduler,
-                         num_epochs=10)
+                         num_epochs=20)
   visualize_model(model_ft)
   torch.save(model_ft.state_dict(), './models/Resnet50_retrained.pth')
   plt.ioff()

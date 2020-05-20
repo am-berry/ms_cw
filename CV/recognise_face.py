@@ -3,6 +3,7 @@ import argparse
 import glob 
 import time
 import joblib
+import warnings
 
 import torch.backends.cudnn as cudnn
 import torch.nn as nn
@@ -25,6 +26,7 @@ import feature_extractors
 import ctypes
 ctypes.cdll.LoadLibrary('caffe2_nvrtc.dll')
 
+warnings.filterwarnings('ignore')
 class_names =['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', 
 '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', 
 '33', '34', '36', '38', '40', '42', '44', '46', '48', '50', '52', '54', '56', '58', '60', '78']
@@ -34,7 +36,7 @@ def recognise_face_cnn(detected_dir, class_names):
   model = models.resnet50(pretrained=False)
   num_f = model.fc.in_features
   model.fc = nn.Linear(num_f, 48)
-  model.load_state_dict(torch.load("./models/1Resnet50_retrained.pth", map_location=device))
+  model.load_state_dict(torch.load("./models/Resnet50_retrained.pth", map_location=device))
   model.to(device)
   model.eval()
   data_transforms = transforms.Compose([
@@ -154,9 +156,9 @@ def recognise_face(image, feature_type='sift', classifier_type='svm', creative_m
     scaler = joblib.load('./models/SURF_SCALER.bin')
     vocab = np.load('./models/surf_vocab.npy')
     detector = cv2.xfeatures2d.SURF_create()
-  if classifier_type == 'cnn':
+  if classifier_type.lower() == 'cnn':
     fin, prob = recognise_face_cnn('./det_faces/', class_names)
-  else:
+  elif classifier_type.lower() == 'svm' or classifier_type.lower() == 'rf':
     fin =  recognise_face_classic('./det_faces/', classifier = classifier_type, extractor = feature_type, detector = detector, scaler = scaler, vocab = vocab)
     prob = None
   return fin, prob 
@@ -166,21 +168,21 @@ if __name__ == '__main__':
   parser.add_argument('image', type = str, help = 'image filename with appropriate path "./*.JPG/PNG')
   parser.add_argument('classifier', type = str, help = 'type of classifier, CNN, SVM, RF')
   parser.add_argument('--features', type = str, help = 'type of feature extractor used, only with SVM and RF - either surf or sift')
-  parser.add_argument('creative_mode', type = bool, default = 0, help = "set 1 to add cartoonifying to faces in group image")
+  parser.add_argument('--creative_mode', default = False, action = 'store_true', help = "set 1 to add cartoonifying to faces in group image")
   args = parser.parse_args()
   fin, _ = recognise_face(args.image, classifier_type = args.classifier, feature_type = args.features, creative_mode = args.creative_mode)
+
   #load in copy of image with bounding boxes added
   im = cv2.imread('results.jpg', cv2.IMREAD_COLOR)
-  cv2.imshow('img', im)
-  cv2.waitKey(0)
   centres = [tuple(x.strip('.JPG').strip('.PNG').split('_')[1:3]) for x in fin.keys()]
-  for x,y in zip(centres, fin.values()):
-    print(f'{y} {x[0]} {x[1]}')
-    im = cv2.putText(im, f'{y}', (int(x[0]), int(x[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-      
-  cv2.imshow('img', im)
-  cv2.waitKey(0)
-  cv2.destroyAllWindows()
+  if os.path.exists('./results.txt'):
+    os.remove('./results.txt')
+  with open('results.txt', 'w') as f:
+    for x,y in zip(centres, fin.values()):
+      print(f'{y} {x[0]} {x[1]}')
+      im = cv2.putText(im, f'{y}', (int(x[0]), int(x[1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+      f.write(f'{y} - {x[0]}, {x[1]}\n') 
+  f.close()
   t = str(time.time()).split('.')[0]
-  
+  os.remove('results.JPG') 
   cv2.imwrite(f'results{t}.JPG', im)

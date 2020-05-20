@@ -17,7 +17,7 @@ def cartoonify(img):
   return cartoon * 255.0
 
 if __name__ == '__main__':
-  img = cv2.imread('roi.JPG', cv2.IMREAD_COLOR)
+  img = cv2.imread('face_693_1831.PNG', cv2.IMREAD_COLOR)
   cartoon = cartoonify(img)
   print(cartoon)
   print(cartoon.shape)

@@ -1,3 +1,5 @@
+# These utility functions are directly adapted from the retinaface repository on github
+
 import os
 import torch
 
@@ -18,7 +20,7 @@ def remove_prefix(state_dict, prefix):
 
 
 def load_model(model, pretrained_path, load_to_cpu):
-    print('Loading pretrained model from {}'.format(pretrained_path))
+    print('Loading face detection model from {}'.format(pretrained_path))
     if load_to_cpu:
         pretrained_dict = torch.load(pretrained_path, map_location=lambda storage, loc: storage)
     else:

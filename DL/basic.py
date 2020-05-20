@@ -106,6 +106,7 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
 def shortest_path(start, end, Q):
   path = [start]
   next_action = np.argmax(Q[start,])
+
   path.append(next_action)
   while next_action != end:
     next_action = np.argmax(Q[next_action,])
@@ -136,9 +137,10 @@ if __name__ == '__main__':
 #    steps = shortest_path(start, end, Q)
 #    print(steps)
 
-  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 1000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
+  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 10000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
   plt.plot(scores)
   plt.show()
   print('Testing...')
   steps = shortest_path(start, end, Q)
   print(steps)
+  

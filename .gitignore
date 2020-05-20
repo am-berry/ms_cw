@@ -19,6 +19,7 @@ advanced.py
 a.py
 *.h5
 
+/CV/final_submission/
 /CV/cv/
 /*/__pycache__/
 /*/.ipynb_checkpoints/*

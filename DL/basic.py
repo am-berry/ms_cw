@@ -27,7 +27,7 @@ def create_networkx_graph(tubemap_dictionary):
 
 # We initialise R by putting a reward of 100 wherever the action is going to the desired end location, and 0s everywhere else
 def initialise_R(nx_graph, end_loc):
-  R = -100 * np.matrix(np.ones(shape=(len(nx_graph),len(nx_graph))))
+  R = -1. * np.matrix(np.ones(shape=(len(nx_graph),len(nx_graph))))
   for node in nx_graph.nodes:
     for x in nx_graph[node]:
       R[x, node] = 0.
@@ -54,10 +54,18 @@ def epsilon_policy(state, epsilon, graph, Q):
   return action
 
 # Boltzmann (softmax) policy - calculates the probabilities of each action for a state, then selects pseurandomly based on these probabilities
+# We need to not allow the policy to choose invalid actions, else we get nonsense paths like Aldgate East -> Paddington -> Bayswater
+# We do so by passing a list of valid actions, zeroing every probability not in the valid actions then renormalising said probabilities 
 def boltzmann_policy(state, tau, graph, Q):
   exp_values  = np.exp(Q[state,] / tau)
   probs = exp_values / np.sum(exp_values)
-  action = np.random.choice(range(Q.shape[0]), p = probs.tolist()[0])
+  valid_actions = [tubemap.place_convert(x) for x in tubemap.tubemap_dictionary[tubemap.num_convert(state)]]
+  probs = probs.tolist()[0]
+  for i in range(len(tubemap.tubemap_dictionary)):
+    if i not in valid_actions:
+      probs[i] = 0
+  probs = np.array(probs) / sum(probs)
+  action = np.random.choice(range(Q.shape[0]), p = probs.tolist())
   return action
 
 # Updates the Q-matrix using the Bellman equation
@@ -80,17 +88,18 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
   scores = [0]*num_episodes
   for i in range(num_episodes):
     loc = np.random.randint(0, len(graph))
-    start_loc = loc
-    if policy == 'boltzmann':
-      loc = boltzmann_policy(loc, parameter, graph, Q)
-    elif policy == 'epsilon':
-      loc = epsilon_policy(loc, parameter, graph, Q)
-    score = update_Q(start_loc, loc, learning_rate, gamma, Q, R)
-    scores[i] += score
-    if parameter > 0.5:
-      parameter *= 0.99999
-    if 0.5 > parameter > min_parameter:
-      parameter *= 0.9999
+    while loc != end:
+      start_loc = loc
+      if policy == 'boltzmann':
+        loc = boltzmann_policy(loc, parameter, graph, Q)
+      elif policy == 'epsilon':
+        loc = epsilon_policy(loc, parameter, graph, Q)
+      score = update_Q(start_loc, loc, learning_rate, gamma, Q, R)
+      scores[i] += score
+      if parameter > 0.5:
+        parameter *= 0.99999
+      if 0.5 > parameter > min_parameter:
+        parameter *= 0.9999
   return scores, Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
@@ -98,7 +107,6 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
 def shortest_path(start, end, Q):
   path = [start]
   next_action = np.argmax(Q[start,])
-
   path.append(next_action)
   while next_action != end:
     next_action = np.argmax(Q[next_action,])
@@ -106,34 +114,29 @@ def shortest_path(start, end, Q):
   return [tubemap.num_convert(station) for station in path]
 
 if __name__ == '__main__':
-  while True:
-    start = input('Start station: ').strip().title()
-    end = input('End station: ').strip().title()
-    if start not in tubemap.tubemap_dictionary.keys() or end not in tubemap.tubemap_dictionary.keys():
-      print("Stations were invalid, please input again")
-      continue
-    else:
-      start = int(tubemap.place_convert(start)) 
-      end = int(tubemap.place_convert(end))
-      break
-  print(start, end)
+#  while True:
+#    start = input('Start station: ').strip().title()
+#    end = input('End station: ').strip().title()
+#    if start not in tubemap.tubemap_dictionary.keys() or end not in tubemap.tubemap_dictionary.keys():
+#      print("Stations were invalid, please input again")
+#      continue
+#    else:
+#      start = int(tubemap.place_convert(start)) 
+#      end = int(tubemap.place_convert(end))
+#      break
+  import argparse
+  parser = argparse.ArgumentParser()
+  parser.add_argument('start', type = int)
+  parser.add_argument('end', type = int)
+  parser.add_argument('episodes', type = int)
+  args = parser.parse_args()
   g = create_networkx_graph(tubemap.tubemap_dictionary)
-  R = initialise_R(g, end)
-#  import pandas as pd
-#  with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-#    print(pd.DataFrame(R))
-  stats = [[x,y] for x in range(59) for y in range(59) if x!=y]
-#  for pair in stats:
-#    start, end = pair
-#    scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 1000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.1, start = start, end=end) 
-#    print('Testing...')
-#    steps = shortest_path(start, end, Q)
-#    print(steps)
-
-  scores, Q = learn(R, learning_rate = 0.8, gamma = 0.6, num_episodes = 10000, graph = g, policy = 'epsilon', parameter = 1., min_parameter = 0.05, start = start, end=end) 
+  R = initialise_R(g, args.end)
+  scores, Q = learn(R, learning_rate = .7, gamma = .7, num_episodes = args.episodes, graph = g, policy = 'epsilon', parameter = 1., min_parameter = .05, start = args.start, end = args.end) 
   plt.plot(scores)
-  plt.show()
-  print('Testing...')
-  steps = shortest_path(start, end, Q)
+  plt.draw()
+  plt.waitforbuttonpress(0)
+  plt.close()
+  steps = shortest_path(args.start, args.end, Q)
   print(steps)
-  
+  print(len(steps))

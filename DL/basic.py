@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 
-import itertools
-
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -58,7 +56,8 @@ def epsilon_policy(state, epsilon, graph, Q):
 # We do so by passing a list of valid actions, zeroing every probability not in the valid actions then renormalising said probabilities 
 def boltzmann_policy(state, tau, graph, Q):
   exp_values  = np.exp(Q[state,] / tau)
-  probs = exp_values / np.sum(exp_values)
+  s = np.sum(exp_values)
+  probs = exp_values / s 
   valid_actions = [tubemap.place_convert(x) for x in tubemap.tubemap_dictionary[tubemap.num_convert(state)]]
   probs = probs.tolist()[0]
   for i in range(len(tubemap.tubemap_dictionary)):
@@ -86,9 +85,12 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
   assert policy == 'boltzmann' or policy == 'epsilon'
   Q = initialise_Q(graph)
   scores = [0]*num_episodes
+  steps = [0]*num_episodes
   for i in range(num_episodes):
+    cnt = 0 
     loc = np.random.randint(0, len(graph))
     while loc != end:
+      cnt += 1
       start_loc = loc
       if policy == 'boltzmann':
         loc = boltzmann_policy(loc, parameter, graph, Q)
@@ -96,11 +98,12 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
         loc = epsilon_policy(loc, parameter, graph, Q)
       score = update_Q(start_loc, loc, learning_rate, gamma, Q, R)
       scores[i] += score
+      steps[i] += cnt
       if parameter > 0.5:
         parameter *= 0.99999
       if 0.5 > parameter > min_parameter:
         parameter *= 0.9999
-  return scores, Q
+  return scores, steps, Q
 
 # Finds the shortest path from start by finding the highest action reward at each state until the end
 # Returns a string of the stations in the shortest path separated by ->
@@ -132,7 +135,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
   g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, args.end)
-  scores, Q = learn(R, learning_rate = .7, gamma = .7, num_episodes = args.episodes, graph = g, policy = 'epsilon', parameter = 1., min_parameter = .05, start = args.start, end = args.end) 
+  scores, steps, Q = learn(R, learning_rate = .7, gamma = .7, num_episodes = args.episodes, graph = g, policy = 'boltzmann', parameter = 1., min_parameter = .05, start = args.start, end = args.end) 
   plt.plot(scores)
   plt.draw()
   plt.waitforbuttonpress(0)

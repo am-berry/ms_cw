@@ -48,8 +48,7 @@ def epsilon_policy(state, epsilon, graph, Q):
     sample = list(dict(graph[state]).keys())
   else:
     sample = np.where(Q[state,] == np.max(Q[state,]))[1]
-  action = np.random.choice(sample)
-  return action
+  return np.random.choice(sample)
 
 # Boltzmann (softmax) policy - calculates the probabilities of each action for a state, then selects pseurandomly based on these probabilities
 # We need to not allow the policy to choose invalid actions, else we get nonsense paths like Aldgate East -> Paddington -> Bayswater
@@ -80,7 +79,7 @@ def update_Q(state, action, learning_rate, gamma, Q, R):
     return 0
 
 # Starts randomly for a set amount of episodes, updating Q as it goes along
-# Implemented greedy-epsilon policy, where epsilon is reduced on each episode
+# Parameter is updated at every step of each episode
 def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_parameter, start, end):
   assert policy == 'boltzmann' or policy == 'epsilon'
   Q = initialise_Q(graph)
@@ -105,14 +104,16 @@ def learn(R, learning_rate, gamma, num_episodes, graph, policy, parameter, min_p
         parameter *= 0.9999
   return scores, steps, Q
 
+
 # Finds the shortest path from start by finding the highest action reward at each state until the end
-# Returns a string of the stations in the shortest path separated by ->
-def shortest_path(start, end, Q):
+def shortest_path(start, end, Q, graph):
   path = [start]
-  next_action = np.argmax(Q[start,])
-  path.append(next_action)
+  next_action = start
   while next_action != end:
-    next_action = np.argmax(Q[next_action,])
+    next_action = np.where(Q[next_action,] == np.max(Q[next_action,]))[1]
+    if next_action.shape[0] > 1:
+      next_action = np.random.choice(next_action)
+    next_action = int(next_action)
     path.append(next_action)
   return [tubemap.num_convert(station) for station in path]
 
@@ -135,11 +136,12 @@ if __name__ == '__main__':
   args = parser.parse_args()
   g = create_networkx_graph(tubemap.tubemap_dictionary)
   R = initialise_R(g, args.end)
-  scores, steps, Q = learn(R, learning_rate = .7, gamma = .7, num_episodes = args.episodes, graph = g, policy = 'boltzmann', parameter = 1., min_parameter = .05, start = args.start, end = args.end) 
+  scores, steps, Q = learn(R, learning_rate = .3, gamma = .3, num_episodes = args.episodes, graph = g, policy = 'epsilon', parameter = .9, min_parameter = .05, start = args.start, end = args.end) 
+  print(Q)
   plt.plot(scores)
   plt.draw()
   plt.waitforbuttonpress(0)
   plt.close()
-  steps = shortest_path(args.start, args.end, Q)
+  steps = shortest_path(args.start, args.end, Q, g)
   print(steps)
   print(len(steps))
